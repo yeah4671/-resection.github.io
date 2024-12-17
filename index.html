@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>확장하되 절제하라</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbit&display=swap" rel="stylesheet">
+    <style>
+        .page-history-nav {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+}
+
+.dot-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.page-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ddd;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.page-dot:hover {
+    background-color: #999;
+}
+
+.page-dot.active {
+    background-color: #333;
+    transform: scale(1.2);
+}
+
+.page-dot-label {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.page-dot:hover .page-dot-label {
+    opacity: 1;
+}
+
+        body {
+            font-family: 'Orbit', sans-serif;
+            margin: 20px;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+                /* 기존 CSS에 추가 */
+        .nav-divider {
+            width: 1px;
+            height: 14px; /* 구분선 높이 */
+            background-color: #ddd;
+            margin: 0 2px; /* 좌우 여백 */
+        }
+
+                /* 기존 CSS에 추가 */
+        .nickname-input {
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 12px;
+            width: 80px;
+            height: 22px;
+            font-family: 'Orbit', sans-serif;
+            outline: none;
+        }
+
+        .nickname-input:focus {
+            border-color: #999;
+        }
+
+        .nickname-label {
+            font-size: 12px;
+            color: #666;
+            margin-right: 4px;
+        }
+
+        /* 기존 archive-navigation CSS 수정 */
+        .archive-navigation {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: white;
+            padding: 5px 8px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 320px; /* 최소 너비 설정 */
+        }
+
+        .archive-navigation button {
+            padding: 3px 10px; /* 패딩 줄임 */
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            font-family: 'Orbit', sans-serif;
+            font-size: 12px; /* 폰트 크기 줄임 */
+        }
+        #clearData {
+    padding: 3px 10px;
+    border: 1px solid #ff6b6b;  /* 빨간색 계열의 테두리 */
+    border-radius: 3px;
+    background: white;
+    cursor: pointer;
+    font-family: 'Orbit', sans-serif;
+    font-size: 12px;
+    color: #ff6b6b;  /* 빨간색 계열의 텍스트 */
+    transition: all 0.2s ease;
+}
+
+#clearData:hover {
+    background: #fff5f5;  /* 연한 빨간색 배경 */
+}
+
+/* archive-navigation의 최소 너비를 조금 더 늘려줍니다 */
+.archive-navigation {
+    min-width: 400px;  /* 최소 너비 증가 */
+}
+
+#pageIndicator {
+    min-width: 60px; /* 너비 줄임 */
+    text-align: center;
+    font-size: 12px; /* 폰트 크기 줄임 */
+}
+
+
+        .archive-navigation button:hover {
+            background: #f5f5f5;
+        }
+
+        #pageIndicator {
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            margin-right: 20px;
+            position: relative;
+            margin-top: 60px; /* 네비게이션 공간 확보 */
+        }
+
+        .side-panel {
+            width: 200px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-left: 1px solid #ddd;
+            overflow-y: auto;
+            font-size: 10pt;
+            margin-top: 30px; /* 네비게이션 공간 확보 */
+        }
+
+        .hidden-text {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .hidden-text-label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 10px;
+            margin-bottom: 50px;
+            padding-right: 20px;
+        }
+
+        .box-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .small-textbox {
+            width: 80px;
+            height: 30px;
+            border: 1px solid black;
+            font-size: 14px;
+            padding: 0 5px;
+            line-height: 30px;
+            box-sizing: border-box;
+            font-family: 'Orbit', sans-serif;
+            border-right: none;
+            flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .divider {
+            width: 1px;
+            background-color: black;
+            height: 30px;
+            margin: 0 5px;
+            flex-shrink: 0;
+        }
+
+            .textarea-wrapper {
+            position: relative;
+            display: flex;
+            min-width: 50px;
+            margin-right: 20px;
+            flex: 1; /* 추가 */
+        }
+
+        .textarea-container {
+            position: relative;
+            width: 100%; /* 수정 */
+            min-width: 50px;
+            flex: 1; /* 추가 */
+        }
+
+        /* 리사이즈 핸들 스타일 수정 */
+.resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+    z-index: 10;
+    top: 0;
+}
+
+.resize-handle-left {
+    left: -5px;
+}
+
+.resize-handle-right {
+    right: -5px;
+}
+
+/* 리사이징 중일 때의 스타일 */
+.resizing textarea {
+    pointer-events: none;
+    user-select: none;
+}
+
+/* 리사이즈 핸들 호버 효과 */
+.resize-handle:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.resize-handle.active {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+        .resize-handle:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .resize-handle.active {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        textarea {
+    width: 100%;
+    height: 30px;
+    border: 1px solid black;
+    border-left: none;
+    resize: horizontal; /* 수정: horizontal로 변경 */
+    font-size: 14px;
+    padding: 0 15px;
+    line-height: 30px;
+    box-sizing: border-box;
+    font-family: 'Orbit', sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 50px; /* 추가 */
+    max-width: 100%; /* 추가 */
+}
+
+        .info-text {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: black;
+        }
+
+        .resizing {
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: col-resize;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .side-panel {
+                width: 100%;
+                height: 200px;
+                border-left: none;
+                border-top: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-history-nav">
+        <div class="dot-container"></div>
+    </div>
+    
+    <div class="archive-navigation">
+        <button id="prevPage">이전</button>
+        <div class="nav-divider"></div>
+        <span id="pageIndicator">페이지 1</span>
+        <div class="nav-divider"></div>
+        <button id="nextPage">다음</button>
+        <div class="nav-divider"></div>
+        <span class="nickname-label">작성자:</span>
+        <input type="text" class="nickname-input" id="pageNickname" placeholder="닉네임">
+        <button id="clearData">모든 기록 삭제</button>
+    </div>     
+    <div class="main-content">
+        <div class="info-text">2 : -</div>
+        <div id="container">
+            <div class="box-container">
+                <input type="text" class="small-textbox" placeholder="단어설정" aria-label="단어 입력" />
+                <div class="divider"></div>
+                <div class="textarea-wrapper">
+                    <div class="resize-handle resize-handle-left" role="separator" aria-label="왼쪽 크기조절"></div>
+                    <div class="textarea-container">
+                        <textarea id="textarea-1" placeholder="확장하되 절제하세요" aria-label="텍스트 입력 영역"></textarea>
+                    </div>
+                    <div class="resize-handle resize-handle-right" role="separator" aria-label="오른쪽 크기조절"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="side-panel" id="side-panel">
+        <h3>미완성</h3>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let isResizing = false;
+    let currentResizer = null;
+    let initialWidth = 0;
+    let initialX = 0;
+    let pageNicknames = {};
+
+    class PageHistoryNav {
+    constructor() {
+        this.container = document.querySelector('.dot-container');
+        this.visitedPages = new Set([1]);
+        this.updateDots();
+    }
+
+    updateDots() {
+        this.container.innerHTML = '';
+        const pages = Array.from(this.visitedPages).sort((a, b) => a - b);
+        
+        pages.forEach(pageNum => {
+            const dot = document.createElement('div');
+            dot.className = `page-dot ${pageNum === currentPage ? 'active' : ''}`;
+            
+            const label = document.createElement('span');
+            label.className = 'page-dot-label';
+            label.textContent = `페이지 ${pageNum}`;
+            
+            dot.appendChild(label);
+            
+            dot.addEventListener('click', () => {
+                savePageData();
+                currentPage = pageNum;
+                loadPageData(currentPage);
+                this.updateDots();
+                updatePageIndicator();
+            });
+            
+            this.container.appendChild(dot);
+        });
+    }
+
+    addPage(pageNum) {
+        this.visitedPages.add(pageNum);
+        this.updateDots();
+        this.saveToStorage();
+    }
+
+    saveToStorage() {
+        localStorage.setItem('visitedPages', JSON.stringify(Array.from(this.visitedPages)));
+    }
+
+    loadFromStorage() {
+        const saved = localStorage.getItem('visitedPages');
+        if (saved) {
+            this.visitedPages = new Set(JSON.parse(saved));
+            this.updateDots();
+        }
+    }
+}
+const pageHistoryNav = new PageHistoryNav();
+
+    // 페이지별 닉네임 관리를 위한 클래스
+class PageNicknameManager {
+    constructor() {
+        this.nicknames = this.loadFromStorage();
+        this.currentPage = 1;
+        this.initializeEventListeners();
+    }
+
+    // localStorage에서 데이터 로드
+    loadFromStorage() {
+        const saved = localStorage.getItem('pageNicknames');
+        return saved ? JSON.parse(saved) : {};
+    }
+
+    // localStorage에 데이터 저장
+    saveToStorage() {
+        localStorage.setItem('pageNicknames', JSON.stringify(this.nicknames));
+    }
+
+    // 현재 페이지의 닉네임 저장
+    saveNickname(page, nickname) {
+        this.nicknames[page] = nickname;
+        this.saveToStorage();
+    }
+
+    // 특정 페이지의 닉네임 가져오기
+    getNickname(page) {
+        return this.nicknames[page] || '';
+    }
+
+    // 페이지 변경 처리
+    changePage(newPage) {
+        // 현재 페이지의 닉네임 저장
+        const currentNickname = document.getElementById('pageNickname').value;
+        this.saveNickname(this.currentPage, currentNickname);
+
+        // 새 페이지로 변경
+        this.currentPage = newPage;
+        
+        // 새 페이지의 닉네임 로드
+        document.getElementById('pageNickname').value = this.getNickname(newPage);
+        document.getElementById('pageIndicator').textContent = `페이지 ${newPage}`;
+    }
+
+    // 이벤트 리스너 초기화
+    initializeEventListeners() {
+        const nicknameInput = document.getElementById('pageNickname');
+        nicknameInput.addEventListener('input', (e) => {
+            this.saveNickname(this.currentPage, e.target.value);
+        });
+
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (this.currentPage > 1) {
+                this.changePage(this.currentPage - 1);
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            this.changePage(this.currentPage + 1);
+        });
+    }
+}
+
+// 페이지 매니저 인스턴스 생성 및 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    window.pageNicknameManager = new PageNicknameManager();
+});
+        // 초기 로드 시 저장된 닉네임 데이터 불러오기
+    function initializeNicknames() {
+        const savedNicknames = localStorage.getItem('pageNicknames');
+        if (savedNicknames) {
+            pageNicknames = JSON.parse(savedNicknames);
+        }
+    }
+
+    // 현재 페이지의 닉네임 저장
+    function saveNickname(page) {
+        const nickname = document.getElementById('pageNickname').value;
+        pageNicknames[page] = nickname;
+        localStorage.setItem('pageNicknames', JSON.stringify(pageNicknames));
+    }
+
+    // 특정 페이지의 닉네임 불러오기
+    function loadNickname(page) {
+        const nicknameInput = document.getElementById('pageNickname');
+        nicknameInput.value = pageNicknames[page] || '';
+    }
+
+    // 기존 changePage 함수 수정
+function changePage(direction) {
+    const currentPageNum = parseInt(document.getElementById('pageIndicator').textContent.split(' ')[1]);
+    let newPage;
+
+    if (direction === 'next') {
+        newPage = currentPageNum + 1;
+    } else if (direction === 'prev') {
+        newPage = Math.max(1, currentPageNum - 1);
+    }
+
+    savePageData();
+    currentPage = newPage;
+    loadPageData(currentPage);
+    pageHistoryNav.addPage(newPage);
+    updatePageIndicator();
+
+
+        // 페이지 전환 시 현재 페이지의 닉네임 저장
+        saveNickname(currentPage);
+
+        // 새 페이지 데이터 로드
+        loadPage(newPage);
+        
+        // 새 페이지의 닉네임 로드
+        loadNickname(newPage);
+        
+        document.getElementById('pageIndicator').textContent = `페이지 ${newPage}`;
+    }
+
+    // 닉네임 입력 필드에 이벤트 리스너 추가
+    document.getElementById('pageNickname').addEventListener('input', function() {
+        const currentPage = parseInt(document.getElementById('pageIndicator').textContent.split(' ')[1]);
+        saveNickname(currentPage);
+    });
+
+    // 페이지 로드 시 초기화
+    window.addEventListener('load', function() {
+        initializeNicknames();
+        loadNickname(1); // 첫 페이지 닉네임 로드
+    });
+
+    // 이전/다음 버튼 이벤트 리스너
+    document.getElementById('prevPage').addEventListener('click', () => changePage('prev'));
+    // 페이지 데이터 저장
+    function savePageData() {
+        const container = document.getElementById('container');
+        const boxes = Array.from(container.getElementsByClassName('box-container')).map(box => {
+            return {
+                word: box.querySelector('.small-textbox').value,
+                text: box.querySelector('textarea').value,
+                width: box.querySelector('.textarea-container').style.width
+            };
+        });
+
+        let allPages = JSON.parse(localStorage.getItem('textboxPages') || '{}');
+        allPages[currentPage] = boxes;
+        localStorage.setItem('textboxPages', JSON.stringify(allPages));
+    }
+
+    // 페이지 데이터 로드
+    function loadPageData(page) {
+        const allPages = JSON.parse(localStorage.getItem('textboxPages') || '{}');
+        const pageData = allPages[page] || [];
+        
+        const container = document.getElementById('container');
+        container.innerHTML = ''; // 기존 내용 비우기
+        
+        pageData.forEach(boxData => {
+            const boxContainer = createNewBoxContainer();
+            boxContainer.querySelector('.small-textbox').value = boxData.word;
+            boxContainer.querySelector('textarea').value = boxData.text;
+            boxContainer.querySelector('.textarea-container').style.width = boxData.width;
+            container.appendChild(boxContainer);
+        
+        });
+
+        if (container.children.length === 0) {
+            // 빈 페이지일 경우 기본 박스 하나 추가
+            addTextBox();
+        }
+
+        updatePageIndicator();
+        updateSidePanel();
+        pageHistoryNav.addPage(page);  // 이 줄 추가
+    updatePageIndicator();
+    updateSidePanel();
+    }
+
+    function createNewBoxContainer() {
+        const boxContainer = document.createElement('div');
+        boxContainer.className = 'box-container';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'small-textbox';
+        input.placeholder = '단어설정';
+        input.setAttribute('aria-label', '단어 입력');
+
+        const divider = document.createElement('div');
+        divider.className = 'divider';
+
+        const textareaWrapper = document.createElement('div');
+        textareaWrapper.className = 'textarea-wrapper';
+
+        const textareaContainer = document.createElement('div');
+        textareaContainer.className = 'textarea-container';
+
+        const textarea = document.createElement('textarea');
+        textarea.placeholder = '확장하되 절제하세요';
+        textarea.setAttribute('aria-label', '텍스트 입력 영역');
+
+        const leftHandle = document.createElement('div');
+        leftHandle.className = 'resize-handle resize-handle-left';
+        leftHandle.setAttribute('role', 'separator');
+        leftHandle.setAttribute('aria-label', '왼쪽 크기조절');
+
+        const rightHandle = document.createElement('div');
+        rightHandle.className = 'resize-handle resize-handle-right';
+        rightHandle.setAttribute('role', 'separator');
+        rightHandle.setAttribute('aria-label', '오른쪽 크기조절');
+
+        textareaContainer.appendChild(textarea);
+        textareaWrapper.appendChild(leftHandle);
+        textareaWrapper.appendChild(textareaContainer);
+        textareaWrapper.appendChild(rightHandle);
+
+        boxContainer.appendChild(input);
+        boxContainer.appendChild(divider);
+        boxContainer.appendChild(textareaWrapper);
+
+        addResizeListeners(leftHandle, rightHandle, textareaContainer);
+        addInputListeners(input, textarea);
+
+        return boxContainer;
+    }
+
+    function updatePageIndicator() {
+        document.getElementById('pageIndicator').textContent = `페이지 ${currentPage}`;
+    }
+
+    function addTextBox() {
+        const container = document.getElementById('container');
+        const boxContainer = createNewBoxContainer();
+        container.insertBefore(boxContainer, container.firstChild);
+        savePageData();
+    }
+
+    function removeLastTextBox() {
+        const container = document.getElementById('container');
+        if (container.children.length > 1) {
+            container.removeChild(container.lastChild);
+            savePageData();
+        }
+    }
+
+    function addResizeListeners(leftHandle, rightHandle, textareaContainer) {
+        [leftHandle, rightHandle].forEach(handle => {
+            handle.addEventListener('mousedown', initResize);
+            handle.addEventListener('touchstart', initResize);
+        });
+    }
+
+    function addInputListeners(input, textarea) {
+        [input, textarea].forEach(el => {
+            el.addEventListener('input', updateSidePanel);
+            el.addEventListener('change', savePageData);
+        });
+    }
+
+    function initResize(e) {
+        e.preventDefault();
+        isResizing = true;
+        currentResizer = e.target;
+        const textareaContainer = currentResizer.closest('.textarea-container');
+
+        initialWidth = currentResizer.closest('.textarea-container').offsetWidth;
+        initialX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('touchmove', resize);
+        document.addEventListener('mouseup', stopResize);
+        document.addEventListener('touchend', stopResize);
+        document.body.classList.add('resizing');
+    }
+
+    const throttle = (func, limit) => {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        }
+    }
+
+    const resize = throttle((e) => {
+        if (!isResizing) return;
+
+        const clientX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+        const deltaX = clientX - initialX;
+        const container = currentResizer.closest('.textarea-container');
+        const parentWidth = container.parentElement.offsetWidth;
+        
+        let newWidth;
+        if (currentResizer.classList.contains('resize-handle-right')) {
+        newWidth = Math.max(50, Math.min(parentWidth - 40, initialWidth + deltaX));
+    } else {
+        newWidth = Math.max(50, Math.min(parentWidth - 40, initialWidth - deltaX));
+    }
+
+    container.style.width = `${newWidth}px`;
+
+    if (newWidth <= 50) {
+        addTextBox();
+    }
+
+    updateSidePanel();
+}, 16);
+
+function stopResize() {
+    if (!isResizing) return;
+    
+    isResizing = false;
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('touchmove', resize);
+    document.body.classList.remove('resizing');
+    
+    const container = currentResizer.closest('.textarea-container');
+    if (container.offsetWidth <= 50) {
+        container.style.width = '50px';
+    }
+    
+    currentResizer = null;
+    savePageData();
+}
+
+
+    function updateSidePanel() {
+        const sidePanel = document.querySelector('.side-panel');
+        sidePanel.innerHTML = '';
+        
+        document.querySelectorAll('.box-container').forEach((box, index) => {
+            const word = box.querySelector('.small-textbox').value;
+            const text = box.querySelector('textarea').value;
+            
+            if (word || text) {
+                const hiddenText = document.createElement('div');
+                hiddenText.className = 'hidden-text';
+                
+                const label = document.createElement('div');
+                label.className = 'hidden-text-label';
+                label.textContent = `텍스트 ${index + 1}`;
+                
+                const content = document.createElement('div');
+                content.textContent = `${word} ${text}`;
+                
+                hiddenText.appendChild(label);
+                hiddenText.appendChild(content);
+                sidePanel.appendChild(hiddenText);
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') addTextBox();
+            if (e.key === '2') removeLastTextBox();
+        });
+        
+
+        // clearData 이벤트 리스너 수정
+document.getElementById('clearData').addEventListener('click', () => {
+    if (confirm('모든 저장된 기록을 삭제하시겠습니까?')) {
+        localStorage.removeItem('textboxPages');
+        localStorage.removeItem('visitedPages');
+        currentPage = 1;
+        loadPageData(currentPage);
+        pageHistoryNav.visitedPages = new Set([1]);
+        pageHistoryNav.updateDots();
+    }
+});
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            savePageData();
+            currentPage++;
+            loadPageData(currentPage);
+        });
+
+        document.getElementById('clearData').addEventListener('click', () => {
+            if (confirm('모든 저장된 기록을 삭제하시겠습니까?')) {
+                localStorage.removeItem('textboxPages');
+                currentPage = 1;
+                loadPageData(currentPage);
+            }
+        });
+
+        // 자동 저장 설정
+        setInterval(savePageData, 5000);
+
+        // 초기 페이지 로드
+        loadPageData(currentPage);
+    });
+</script>
+</body>
+</html>
